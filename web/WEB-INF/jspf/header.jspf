@@ -1,0 +1,109 @@
+<%@ page pageEncoding="UTF-8" %>
+<div id="session">
+    <nav v-if="data" class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+        <a class="navbar-brand text-center mx-auto brand-logo" href="index.jsp"><i ></i>AutoBudget</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarText">
+            <ul class="navbar-nav mx-auto mb-2 mb-lg-0"> <!-- Alteração: adicionado "mx-auto" para centralizar os links -->
+                <li class="nav-item">
+                    <a class="nav-link text-uppercase" href="index.jsp">Home</a> <!-- Alteração: adicionado "text-uppercase" para deixar o texto em maiúsculas -->
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-uppercase" href="estoques.jsp">Estoques</a>
+                </li>
+                <li class="nav-item" v-if="data.role === 'ADMIN'">  
+                    <a class="nav-link text-uppercase" href="users.jsp">Users</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-uppercase" href="orcamento.jsp">Orçamentos</a>
+                </li>
+                
+            </ul>
+            <span class="navbar-text">
+                <i class="bi bi-person"></i>{{data.name}}
+                <button @click="logout()" class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-arrow-right-circle"></i></button>
+            </span>         
+        </div>
+    </div>
+</nav>
+    
+    
+    <div v-else>
+    <div class="card bg-dark text-light mb-5">
+        <div class="card-header">
+            <h1><i class="align-items-center "></i>Auto Budget Login</h1>
+        </div>
+        <div class="card-body d-flex justify-content-center align-items-center vh-100">
+            <form class="m-5">
+                <div class="mb-3">
+                    <label class="form-label text-light">Username</label>
+                    <input v-model="loginUsername" type="text" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-light">Password</label>
+                    <input v-model="loginPassword" type="password" class="form-control">
+                </div>
+                <button @click="login()" type="submit" class="btn btn-primary">Login</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<div v-if="error && error!=='No session'" class="alert alert-danger m-2" role="alert">
+    {{error}}
+</div>
+</div>
+<script>
+    const shared = Vue.reactive({ session: null });
+    
+    const session = Vue.createApp({
+        data() {
+            return {
+                shared: shared,
+                error: null,
+                loginUsername: null,
+                loginPassword: null,
+                data: null
+            }
+        },
+        methods: {
+            async request(url = "", method, data) {
+                try{
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {"Content-Type": "application/json", },
+                        body: JSON.stringify(data)
+                    }); 
+                    if(response.status==200){
+                        return response.json();
+                    }else{
+                        this.error = response.statusText;
+                    }
+                } catch(e){
+                    this.error = e;
+                    return null;
+                }
+            },
+            async loadSession() {
+                const data = await this.request("/AutoBudget-2/api/session", "GET");
+                if(data) {this.data = data; this.error = null; this.shared.session = this.data;}
+            },
+            async login() {
+                const data = await this.request("/AutoBudget-2/api/session", "PUT", {"login": this.loginUsername, "password": this.loginPassword});
+                if(data) {this.data = data; this.error = null; this.shared.session = this.data;}
+            },
+            async logout() {
+                const data = await this.request("/AutoBudget-2/api/session", "DELETE");
+                if(data) {this.data = null; this.error = null; this.shared.session = this.data;}
+            }
+        },
+        mounted() {
+            this.loadSession();
+        }
+    });
+    session.mount('#session');
+</script>
